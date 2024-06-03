@@ -189,7 +189,7 @@ def main():
         # Load the BM25 retriever
         if not bm25_retriever:
             bm25_retriever = load_bm25_retriever()
-        # Create an ensemble retriever with the BM25 and FAISS retrievers
+        # Create an ensemble retriever with the BM25 and Qdrant retrievers
         ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever, qdrant_retriever], weights=[0.5, 0.5])
 
         test_df = pd.read_csv(csv_path)
