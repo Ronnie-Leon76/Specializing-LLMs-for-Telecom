@@ -1,0 +1,20 @@
+accelerate
+bitsandbytes
+langchain==0.1.20
+langchain-community==0.0.38
+langchain-core==0.1.52
+langchain-huggingface==0.0.1
+langchain-text-splitters==0.0.2
+langdetect==1.0.9
+langsmith==0.1.59
+pandas
+pdf2image
+pdfminer.six
+pillow
+pillow_heif
+python-docx==1.1.2
+python-dotenv==1.0.1
+sentence-transformers
+transformers @ git+https://github.com/huggingface/transformers.git@481a95781404e48b1c80940be17e8279dec82fe8
+unstructured
+unstructured-client
