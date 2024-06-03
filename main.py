@@ -25,6 +25,8 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 
 COLLECTION_NAME = 'Telecom-Collection'
 QDRANT_URL = 'https://76312e06-209d-4896-bde2-391165356562.us-east4-0.gcp.cloud.qdrant.io'
+
+
 TEST_DATASET_ALPACA_PROMPT = """Below is an instruction that describes a task.
 Use the options to provide an answer to the question.
 

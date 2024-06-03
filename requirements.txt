@@ -18,3 +18,4 @@ sentence-transformers
 transformers @ git+https://github.com/huggingface/transformers.git@481a95781404e48b1c80940be17e8279dec82fe8
 unstructured
 unstructured-client
+qdrant_client
