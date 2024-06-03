@@ -29,4 +29,10 @@
 
 2. Install the requirements with `pip install -r requirements.txt`
 
-3. Once you have everything setup in your environment, run `python main.py ./Data/ TeleQnA_testing1.csv` to run the solution.
+3. Create a `.env` file in the root directory of the project and add the following environment variables:
+    ```bash
+    QDRANT_API_KEY=<your_qdrant_api_key>
+    HF_TOKEN=<your_hugging_face_token>
+    ``` 
+
+4. Once you have everything setup in your environment, run `python main.py ./Data/ TeleQnA_testing1.csv` to run the solution.
