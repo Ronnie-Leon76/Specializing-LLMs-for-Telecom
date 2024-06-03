@@ -62,7 +62,7 @@ model = AutoModelForCausalLM.from_pretrained(
     token=HF_TOKEN
 )
 
-pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, temperature=0.3, device_map='auto')
+pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, max_length=200, temperature=0.3, device_map='auto', batch_size=8)
 llm = HuggingFacePipeline(pipeline=pipe)
 
 
@@ -164,8 +164,11 @@ def main():
             option5 = row['option 5']
             category = row['category']
             query = TEST_DATASET_ALPACA_PROMPT.format(question, option1, option2, option3, option4, option5, category)
+            print(query)
             response = pipe(query)
+            print(response)
             value = response[0]['generated_text']
+            print(value)
             answer_id = regex_query_response_postprocessor(value)
             print(answer_id)
             question_id = extract_question_id_from_test_df_index(i)
