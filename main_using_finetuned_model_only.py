@@ -62,7 +62,7 @@ model = AutoModelForCausalLM.from_pretrained(
     token=HF_TOKEN
 )
 
-pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, temperature=0.1, device_map='auto')
+pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, temperature=0.3, device_map='auto')
 llm = HuggingFacePipeline(pipeline=pipe)
 
 
@@ -149,52 +149,11 @@ def main():
         print(f"TeleQnA_testing1 CSV path {csv_path} does not exist")
         sys.exit(1)
 
-    bm25_retriever = None
+    # bm25_retriever = None
 
     try:
-        client = initialize_qdrant_client()
-        embedding_model = load_embedding_model()
-        if not client.collection_exists(COLLECTION_NAME):
-            docx_files = [f for f in os.listdir(dir_path) if f.endswith('.docx')]
-
-            documents = []
-            for docx_file in tqdm(docx_files, desc='Processing DOCX files'):
-                docx_path = os.path.join(dir_path, docx_file)
-                try:
-                    df = extract_text_and_metadata_from_docx_document(docx_path)
-                    print(f"Extracted text and metadata from {docx_file}")
-                    for index, row in tqdm(df.iterrows(), total=len(df), desc='Processing rows'):
-                        parent_id = row['Parent_Id']
-                        file_name = row['Filename']
-                        text = row['Text']
-                        page_number = row['Page_Number']
-                        document = Document(
-                            page_content = text,
-                            metadata = {
-                                'id': str(index) + '_' + str(parent_id) + '_' + file_name + '_' + str(page_number),
-                                'type': 'text',
-                                'filename': file_name,
-                                'page_number': page_number
-                            }
-                        )
-                        documents.append(document)
-                except Exception as e:
-                    print(f"Error processing {docx_file}: {str(e)}")
-            create_vector_db(documents, embedding_model)
-            bm25_retriever = initialize_bm25_retriever(documents)
-
-        # Load the Qdrant vector store
-        db = Qdrant(client=client, embeddings=embedding_model, collection_name=COLLECTION_NAME)
-        qdrant_retriever = db.as_retriever(search_kwargs={'k': 5})
-        # Load the BM25 retriever
-        if not bm25_retriever:
-            bm25_retriever = load_bm25_retriever()
-        # Create an ensemble retriever with the BM25 and Qdrant retrievers
-        ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever, qdrant_retriever], weights=[0.5, 0.5])
-
         test_df = pd.read_csv(csv_path)
         sample_submission_df = pd.DataFrame(columns=['Question_ID', 'Answer_ID'])
-        qa_chain = retrieval_qa_chain(llm, ensemble_retriever)
 
         for i, row in tqdm(test_df.iterrows(), total=len(test_df), desc='Processing rows'):
             question = row['question']
@@ -205,8 +164,8 @@ def main():
             option5 = row['option 5']
             category = row['category']
             query = TEST_DATASET_ALPACA_PROMPT.format(question, option1, option2, option3, option4, option5, category)
-            response = qa_chain({'query': query})
-            value = response['result']
+            response = pipe(query)
+            value = response[0]['generated_text']
             answer_id = regex_query_response_postprocessor(value)
             print(answer_id)
             question_id = extract_question_id_from_test_df_index(i)
