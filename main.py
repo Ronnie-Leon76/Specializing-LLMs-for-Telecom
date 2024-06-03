@@ -9,7 +9,8 @@ from langchain.schema.document import Document
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.retrievers import BM25Retriever, EnsembleRetriever
 from langchain.chains import RetrievalQA
-from langchain_community.vectorstores import Qdrant
+# from langchain_community.vectorstores import Qdrant
+from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFacePipeline
 from transformers import AutoModelForCausalLM, AutoTokenizer,pipeline
 from dotenv import load_dotenv, find_dotenv
@@ -20,11 +21,11 @@ from Ingestion.ingest import extract_text_and_metadata_from_docx_document
 warnings.filterwarnings("ignore")
 
 _ = load_dotenv(find_dotenv())
-QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+# QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 HF_TOKEN = os.getenv("HF_TOKEN")
 
-COLLECTION_NAME = 'Telecom-Collection'
-QDRANT_URL = 'https://76312e06-209d-4896-bde2-391165356562.us-east4-0.gcp.cloud.qdrant.io'
+# COLLECTION_NAME = 'Telecom-Collection'
+# QDRANT_URL = 'https://76312e06-209d-4896-bde2-391165356562.us-east4-0.gcp.cloud.qdrant.io'
 
 
 TEST_DATASET_ALPACA_PROMPT = """Below is an instruction that describes a task.
@@ -52,6 +53,8 @@ Use the options to provide an answer to the question.
 {}
 """
 
+DB_FAISS_PATH = 'vectorstore/db_faiss'
+
 model_id = "Adeptschneider/phi2-telecom-fine-tuned-model"
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 
@@ -75,19 +78,25 @@ def load_embedding_model():
     return HuggingFaceEmbeddings(model_name="mixedbread-ai/mxbai-embed-large-v1", model_kwargs={'device': 'cpu'})
 
 
-def create_vector_db(documents, embedding_model):
-    qdrant = Qdrant.from_documents(
-        documents,
-        embedding_model,
-        url=QDRANT_URL,
-        prefer_grpc=True,
-        api_key=QDRANT_API_KEY,
-        collection_name=COLLECTION_NAME,
-    )
-    print(f"Created vector database with {len(documents)} documents")
+# def create_vector_db(documents, embedding_model):
+#     qdrant = Qdrant.from_documents(
+#         documents,
+#         embedding_model,
+#         url=QDRANT_URL,
+#         prefer_grpc=True,
+#         api_key=QDRANT_API_KEY,
+#         collection_name=COLLECTION_NAME,
+#     )
+#     print(f"Created vector database with {len(documents)} documents")
 
-def initialize_qdrant_client():
-    return QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+# def initialize_qdrant_client():
+#     return QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+
+
+def create_vector_db(documents, embedding_model):
+    # Create a vector store
+    db = FAISS.from_documents(documents, embedding_model)
+    db.save_local(DB_FAISS_PATH)
 
 def initialize_bm25_retriever(documents):
     bm25_retriever = BM25Retriever.from_documents(documents)
@@ -152,9 +161,8 @@ def main():
     bm25_retriever = None
 
     try:
-        client = initialize_qdrant_client()
         embedding_model = load_embedding_model()
-        if not client.collection_exists(COLLECTION_NAME):
+        if not os.path.exists(DB_FAISS_PATH):
             docx_files = [f for f in os.listdir(dir_path) if f.endswith('.docx')]
 
             documents = []
@@ -180,17 +188,19 @@ def main():
                         documents.append(document)
                 except Exception as e:
                     print(f"Error processing {docx_file}: {str(e)}")
+            with open('documents.pkl', 'wb') as f:
+                pickle.dump(documents, f)
             create_vector_db(documents, embedding_model)
             bm25_retriever = initialize_bm25_retriever(documents)
 
-        # Load the Qdrant vector store
-        db = Qdrant(client=client, embeddings=embedding_model, collection_name=COLLECTION_NAME)
-        qdrant_retriever = db.as_retriever(search_kwargs={'k': 5})
+        # Load the FAISS vector store
+        db = FAISS.load_local(DB_FAISS_PATH, embedding_model, allow_dangerous_deserialization=True)
+        faiss_retriever = db.as_retriever()
         # Load the BM25 retriever
         if not bm25_retriever:
             bm25_retriever = load_bm25_retriever()
         # Create an ensemble retriever with the BM25 and FAISS retrievers
-        ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever, qdrant_retriever], weights=[0.5, 0.5])
+        ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever, faiss_retriever], weights=[0.5, 0.5])
 
         test_df = pd.read_csv(csv_path)
         sample_submission_df = pd.DataFrame(columns=['Question_ID', 'Answer_ID'])
@@ -206,7 +216,9 @@ def main():
             category = row['category']
             query = TEST_DATASET_ALPACA_PROMPT.format(question, option1, option2, option3, option4, option5, category)
             response = qa_chain({'query': query})
+            print(response)
             value = response['result']
+            print(value)
             answer_id = regex_query_response_postprocessor(value)
             print(answer_id)
             question_id = extract_question_id_from_test_df_index(i)
