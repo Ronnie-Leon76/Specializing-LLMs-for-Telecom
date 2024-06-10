@@ -30,10 +30,9 @@
 2. Install the requirements with `pip install -r requirements.txt`
 
 3. Start Qdrant in a docker container using the following command:
-```bash
-docker run -p 6333:6333 -p 6334:6334 \
-    -v $(pwd)/qdrant_storage:/qdrant/storage:z \
-    qdrant/qdrant
-
-    ``` 
-4. Once you have everything setup in your environment, run `python main.py ./Data/ TeleQnA_testing1.csv` to run the solution.
+    ```bash
+    docker run -p 6333:6333 -p 6334:6334 \
+        -v $(pwd)/qdrant_storage:/qdrant/storage:z \
+        qdrant/qdrant
+    ```
+4. Once you have everything setup in your environment, run `python main.py ./Data/ TeleQnA_testing1_refined.csv` to run the solution.
