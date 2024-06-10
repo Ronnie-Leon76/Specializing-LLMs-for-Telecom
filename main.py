@@ -11,6 +11,7 @@ from langchain.retrievers import BM25Retriever, EnsembleRetriever
 from langchain.chains import RetrievalQA
 from langchain_community.vectorstores import Qdrant
 from langchain_huggingface import HuggingFacePipeline
+from langchain.chains import LLMChain
 from transformers import AutoModelForCausalLM, AutoTokenizer,pipeline
 from dotenv import load_dotenv, find_dotenv
 from qdrant_client import QdrantClient
@@ -24,11 +25,12 @@ QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 COLLECTION_NAME = 'Telecom-Collection'
-QDRANT_URL = 'https://76312e06-209d-4896-bde2-391165356562.us-east4-0.gcp.cloud.qdrant.io'
+QDRANT_URL = 'http://localhost:6333'
 
 
 TEST_DATASET_ALPACA_PROMPT = """Below is an instruction that describes a task.
-Use the options to provide an answer to the question.
+Use the following pieces of context to answer the question by selecting the option that has the right answer..
+{}
 
 ### Question:
 {}
@@ -50,9 +52,14 @@ Use the options to provide an answer to the question.
 
 ### Category:
 {}
+
+Provide the answer in the following format:
+
+### Answer:
+option [number]: [option answer]
 """
 
-model_id = "Adeptschneider/phi2-telecom-fine-tuned-model"
+model_id = "tiiuae/falcon-7b"
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 
 model = AutoModelForCausalLM.from_pretrained(
@@ -72,7 +79,7 @@ def pretty_print_docs(docs):
 
 
 def load_embedding_model():
-    return HuggingFaceEmbeddings(model_name="mixedbread-ai/mxbai-embed-large-v1", model_kwargs={'device': 'cpu'})
+    return HuggingFaceEmbeddings(model_name="mixedbread-ai/mxbai-embed-large-v1", model_kwargs={'device': 'cuda:0'})
 
 
 def create_vector_db(documents, embedding_model):
@@ -80,8 +87,8 @@ def create_vector_db(documents, embedding_model):
         documents,
         embedding_model,
         url=QDRANT_URL,
-        prefer_grpc=True,
-        api_key=QDRANT_API_KEY,
+        prefer_grpc=False,
+        # api_key=QDRANT_API_KEY,
         collection_name=COLLECTION_NAME,
     )
     print(f"Created vector database with {len(documents)} documents")
@@ -118,6 +125,24 @@ def regex_query_response_postprocessor(response):
         answer_option = match.group(1)
     else:
         answer_option = None
+    return answer_option
+
+def extract_question_id_from_test_df_index(index):
+    pattern = r'question (\d+)'
+    match = re.search(pattern, index)
+    if match:
+        question_id = match.group(1)
+    else:
+        question_id = None
+    return question_id
+
+def regex_query_response_postprocessor(response):
+    pattern = r'Answer:\s*option\s*(\d+):'
+    match = re.search(pattern, response)
+    if match:
+        answer_option = match.group(1)
+    else:
+        answer_option = 0
     return answer_option
 
 def extract_question_id_from_test_df_index(index):
@@ -194,7 +219,8 @@ def main():
 
         test_df = pd.read_csv(csv_path)
         sample_submission_df = pd.DataFrame(columns=['Question_ID', 'Answer_ID'])
-        qa_chain = retrieval_qa_chain(llm, ensemble_retriever)
+        # qa_chain = retrieval_qa_chain(llm, ensemble_retriever)
+        llm_chain = LLMChain(llm=llm)
 
         for i, row in tqdm(test_df.iterrows(), total=len(test_df), desc='Processing rows'):
             question = row['question']
@@ -204,24 +230,26 @@ def main():
             option4 = row['option 4']
             option5 = row['option 5']
             category = row['category']
-            query = TEST_DATASET_ALPACA_PROMPT.format(question, option1, option2, option3, option4, option5, category)
-            response = qa_chain({'query': query})
-            value = response['result']
-            answer_id = regex_query_response_postprocessor(value)
-            print(answer_id)
-            question_id = extract_question_id_from_test_df_index(i)
-            print(question_id)
-            sample_submission_df = pd.concat([
-                sample_submission_df,
-                pd.DataFrame([{
-                    'Question_ID': question_id,
-                    'Answer_ID': answer_id
-                }])
-            ], ignore_index=True)
+            test_index = row['Test_Index']
+            results = ensemble_retriever.get_relevant_documents(question)
+            query = TEST_DATASET_ALPACA_PROMPT.format(results, question, option1, option2, option3, option4, option5, category)
+            response = llm_chain.run(query)
+            print(response)
+            value = response[0]['generated_text']
+            print(value)
+            # answer_id = regex_query_response_postprocessor(value)
+            # question_id = extract_question_id_from_test_df_index(test_index)
+            # sample_submission_df = pd.concat([
+            #     sample_submission_df,
+            #     pd.DataFrame([{
+            #         'Question_ID': question_id,
+            #         'Answer_ID': answer_id
+            #     }])
+            # ], ignore_index=True)
 
-        timestamp = pd.Timestamp.now().strftime('%Y%m%d%H%M%S')
-        sample_submission_df.to_csv(f'sample_submission_{timestamp}.csv', index=False)
-        print(f"Sample submission file saved as sample_submission_{timestamp}.csv")
+        # timestamp = pd.Timestamp.now().strftime('%Y%m%d%H%M%S')
+        # sample_submission_df.to_csv(f'sample_submission_{timestamp}.csv', index=False)
+        # print(f"Sample submission file saved as sample_submission_{timestamp}.csv")
 
     except Exception as e:
         print(f"Error: {str(e)}")
