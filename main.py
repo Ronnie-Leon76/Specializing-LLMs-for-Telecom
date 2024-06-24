@@ -236,20 +236,20 @@ def main():
             response = llm_chain.run(query)
             print(response)
             value = response[0]['generated_text']
-            print(value)
-            # answer_id = regex_query_response_postprocessor(value)
-            # question_id = extract_question_id_from_test_df_index(test_index)
-            # sample_submission_df = pd.concat([
-            #     sample_submission_df,
-            #     pd.DataFrame([{
-            #         'Question_ID': question_id,
-            #         'Answer_ID': answer_id
-            #     }])
-            # ], ignore_index=True)
+            # print(value)
+            answer_id = regex_query_response_postprocessor(value)
+            question_id = extract_question_id_from_test_df_index(test_index)
+            sample_submission_df = pd.concat([
+                sample_submission_df,
+                pd.DataFrame([{
+                    'Question_ID': question_id,
+                    'Answer_ID': answer_id
+                }])
+            ], ignore_index=True)
 
-        # timestamp = pd.Timestamp.now().strftime('%Y%m%d%H%M%S')
-        # sample_submission_df.to_csv(f'sample_submission_{timestamp}.csv', index=False)
-        # print(f"Sample submission file saved as sample_submission_{timestamp}.csv")
+        timestamp = pd.Timestamp.now().strftime('%Y%m%d%H%M%S')
+        sample_submission_df.to_csv(f'sample_submission_{timestamp}.csv', index=False)
+        print(f"Sample submission file saved as sample_submission_{timestamp}.csv")
 
     except Exception as e:
         print(f"Error: {str(e)}")
