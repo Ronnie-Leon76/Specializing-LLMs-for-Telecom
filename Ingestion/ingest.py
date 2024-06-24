@@ -1,5 +1,6 @@
 import pandas as pd
 from unstructured.partition.docx import partition_docx
+from unstructured.cleaners.core import clean
 
 def extract_text_and_metadata_from_docx_document(docx_path):
     """
@@ -19,7 +20,7 @@ def extract_text_and_metadata_from_docx_document(docx_path):
         row['Parent_Id'] = c.metadata.parent_id
         row['Category_Depth'] = c.metadata.category_depth
         row['Page_Number'] = c.metadata.page_number
-        row['Text'] = c.text
+        row['Text'] = clean(c.text, bullets=True, extra_whitespace=True, dashes=True, trailing_punctuation=True)
         data.append(row)
 
     df = pd.DataFrame(data)
