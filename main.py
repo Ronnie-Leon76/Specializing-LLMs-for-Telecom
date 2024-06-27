@@ -233,7 +233,7 @@ def main():
             test_index = row['Test_Index']
             results = ensemble_retriever.get_relevant_documents(question)
             query = TEST_DATASET_ALPACA_PROMPT.format(results, question, option1, option2, option3, option4, option5, category)
-            response = llm_chain.invoke(query)
+            response = llm.invoke(query)
             # print(response)
             # value = response[0]['generated_text']
             # print(value)
