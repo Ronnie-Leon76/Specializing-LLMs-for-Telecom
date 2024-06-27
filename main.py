@@ -220,7 +220,7 @@ def main():
         test_df = pd.read_csv(csv_path)
         sample_submission_df = pd.DataFrame(columns=['Question_ID', 'Answer_ID'])
         # qa_chain = retrieval_qa_chain(llm, ensemble_retriever)
-        llm_chain = LLMChain(llm=llm)
+        # llm_chain = LLMChain(llm=llm)
 
         for i, row in tqdm(test_df.iterrows(), total=len(test_df), desc='Processing rows'):
             question = row['question']
@@ -233,9 +233,9 @@ def main():
             test_index = row['Test_Index']
             results = ensemble_retriever.get_relevant_documents(question)
             query = TEST_DATASET_ALPACA_PROMPT.format(results, question, option1, option2, option3, option4, option5, category)
-            response = llm_chain.run(query)
-            print(response)
-            value = response[0]['generated_text']
+            response = llm_chain.invoke(query)
+            # print(response)
+            # value = response[0]['generated_text']
             # print(value)
             answer_id = regex_query_response_postprocessor(value)
             question_id = extract_question_id_from_test_df_index(test_index)
