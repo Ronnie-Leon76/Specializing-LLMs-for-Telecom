@@ -237,7 +237,7 @@ def main():
             # print(response)
             # value = response[0]['generated_text']
             # print(value)
-            answer_id = regex_query_response_postprocessor(value)
+            answer_id = regex_query_response_postprocessor(response)
             question_id = extract_question_id_from_test_df_index(test_index)
             sample_submission_df = pd.concat([
                 sample_submission_df,
