@@ -36,3 +36,17 @@
         qdrant/qdrant
     ```
 4. Once you have everything setup in your environment, run `python main.py ./Data/ TeleQnA_testing1_refined.csv` to run the solution.
+
+- To run the LlamaIndex solution version, follow the following instructions:
+
+1. Create a new virtual environment:
+    - If using vanilla [virtualenv](https://virtualenv.pypa.io/en/latest/), run `virtualenv venv` and then activate the virtual environment with the following commands for linux `source venv/bin/activate` and for a Windows machine `<venv>\Scripts\activate.bat`
+    - If using [virtualenvwrapper](https://virtualenvwrapper.readthedocs.org/en/latest/), run `mkvirtualenv venv`
+  
+2. Install the requirements with `pip install -r llama_index_requirements.txt`
+
+3. First create a LlamaIndex RAG pipeline with training data for finetuning using the following command: ```python vector_store_for_rag.py```
+
+4. Then fine-tune Microsoft Phi-2 using the training dataset created using the following command: ```python fine_tuning.py```
+
+5. Run the following command: ```python llama_index_main.py``` to run inference to generate a submission file.
