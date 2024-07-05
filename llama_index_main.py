@@ -15,10 +15,10 @@ torch.set_default_device("cuda")
 
 MODEL_USED = 'Phi-2'
 USE_REPO_MODEL = False  # use fine-tuned model from repo (models/peft_phi_2_repo)
-USE_LOCAL_FINE_TUNED = False  # use own fine-tuned model (models/peft_phi_2)
+USE_LOCAL_FINE_TUNED = True  # use own fine-tuned model (models/peft_phi_2)
 USE_MODEL_FROM_HUGGINGFACE = False  # use the original model without fine-tuning
 DO_TRAIN_INFERENCE = True  # do train inference (True) or only test inference (False)
-PERFORM_RAG = False
+PERFORM_RAG = True
 
 if USE_REPO_MODEL:
     model_path = 'models/peft_phi_2_repo'
