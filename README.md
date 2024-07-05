@@ -11,7 +11,7 @@
 
 
 ## Setup
-- To run this solution, follow the following instructions:
+### To run this solution, follow the following instructions:
 
 1. Create a new virtual environment:
     - If using vanilla [virtualenv](https://virtualenv.pypa.io/en/latest/), run `virtualenv venv` and then activate the virtual environment with the following commands for linux `source venv/bin/activate` and for a Windows machine `<venv>\Scripts\activate.bat`
@@ -37,7 +37,7 @@
     ```
 4. Once you have everything setup in your environment, run `python main.py ./Data/ TeleQnA_testing1_refined.csv` to run the solution.
 
-- To run the LlamaIndex solution version, follow the following instructions:
+### To run the LlamaIndex solution version, follow the following instructions:
 
 1. Create a new virtual environment:
     - If using vanilla [virtualenv](https://virtualenv.pypa.io/en/latest/), run `virtualenv venv` and then activate the virtual environment with the following commands for linux `source venv/bin/activate` and for a Windows machine `<venv>\Scripts\activate.bat`
